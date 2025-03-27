@@ -74,6 +74,7 @@
             }
 
             let totalFinanciacion = 0;
+            let universidades = {};
             resultados.forEach(proyecto => {
                 let div = document.createElement("div");
                 div.classList.add("proyecto");
@@ -82,7 +83,14 @@
                                  Comunidad: ${proyecto.comunidad}<br>
                                  Financiación: ${proyecto.financiacion}<br>`;
                 contenedor.appendChild(div);
-                totalFinanciacion += parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                let financiacionProyecto = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                totalFinanciacion += financiacionProyecto;
+                
+                if (universidades[proyecto.universidad]) {
+                    universidades[proyecto.universidad] += financiacionProyecto;
+                } else {
+                    universidades[proyecto.universidad] = financiacionProyecto;
+                }
             });
             
             document.getElementById("totalFinanciacion").innerText = `Total financiación de proyectos filtrados: ${totalFinanciacion.toLocaleString()} €`;
