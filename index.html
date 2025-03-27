@@ -56,7 +56,7 @@
                 (ip === "" || proyecto.IP.toLowerCase().includes(ip)) &&
                 (universidad === "" || proyecto.universidad.toLowerCase().includes(universidad)) &&
                 (comunidad === "" || proyecto.comunidad.toLowerCase().includes(comunidad)) &&
-                (financiacion === "" || parseFloat(proyecto.financiacion.replace("€", "").replace(".", "")) >= parseFloat(financiacion))
+                (financiacion === "" || parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, "")) >= parseFloat(financiacion))
             );
 
             mostrarResultados(proyectosFiltrados);
@@ -83,7 +83,7 @@
                                  Comunidad: ${proyecto.comunidad}<br>
                                  Financiación: ${proyecto.financiacion}<br>`;
                 contenedor.appendChild(div);
-                let financiacionProyecto = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                let financiacionProyecto = parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
                 totalFinanciacion += financiacionProyecto;
                 
                 if (universidades[proyecto.universidad]) {
@@ -100,7 +100,7 @@
             let universidades = {};
             proyectos.forEach(proyecto => {
                 let uni = proyecto.universidad;
-                let financiacion = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                let financiacion = parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
                 if (universidades[uni]) {
                     universidades[uni] += financiacion;
                 } else {
