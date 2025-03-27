@@ -10,28 +10,20 @@
         input, select, button { margin: 5px; padding: 8px; width: 200px; }
         .proyecto { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; background: #f9f9f9; }
         .total-financiacion { font-size: 18px; font-weight: bold; margin-top: 10px; }
-        .container { display: flex; }
-        .filters { width: 30%; }
-        .results { width: 70%; }
     </style>
 </head>
 <body>
     <h1>Buscador de Proyectos</h1>
-    <div class="container">
-        <div class="filters">
-            <input type="text" id="titulo" placeholder="Buscar por palabra clave en título">
-            <input type="text" id="ip" placeholder="Buscar por IP">
-            <input type="text" id="universidad" placeholder="Buscar por universidad">
-            <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
-            <input type="number" id="financiacion" placeholder="Financiación mínima">
-            <button onclick="filtrarProyectos()">Buscar</button>
-        </div>
-        <div class="results">
-            <canvas id="grafico"></canvas>
-            <div id="resultados"></div>
-            <p id="totalFinanciacion" class="total-financiacion"></p>
-        </div>
-    </div>
+    <input type="text" id="titulo" placeholder="Buscar por palabra clave en título">
+    <input type="text" id="ip" placeholder="Buscar por IP">
+    <input type="text" id="universidad" placeholder="Buscar por universidad">
+    <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
+    <input type="number" id="financiacion" placeholder="Financiación mínima">
+    <button onclick="filtrarProyectos()">Buscar</button>
+    
+    <canvas id="grafico"></canvas>
+    <div id="resultados"></div>
+    <p id="totalFinanciacion" class="total-financiacion"></p>
     
     <script>
         let proyectos = [];
@@ -74,7 +66,6 @@
             }
 
             let totalFinanciacion = 0;
-            let universidades = {};
             resultados.forEach(proyecto => {
                 let div = document.createElement("div");
                 div.classList.add("proyecto");
@@ -83,16 +74,8 @@
                                  Comunidad: ${proyecto.comunidad}<br>
                                  Financiación: ${proyecto.financiacion}<br>`;
                 contenedor.appendChild(div);
-                let financiacionProyecto = parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
-                totalFinanciacion += financiacionProyecto;
-                
-                if (universidades[proyecto.universidad]) {
-                    universidades[proyecto.universidad] += financiacionProyecto;
-                } else {
-                    universidades[proyecto.universidad] = financiacionProyecto;
-                }
+                totalFinanciacion += parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
             });
-            
             document.getElementById("totalFinanciacion").innerText = `Total financiación de proyectos filtrados: ${totalFinanciacion.toLocaleString()} €`;
         }
 
