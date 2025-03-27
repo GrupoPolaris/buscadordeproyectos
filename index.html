@@ -29,13 +29,15 @@
         let proyectos = [];
         let chart;
 
+        // Cargar proyectos desde el JSON
         fetch("proyectos.json")
             .then(response => response.json())
             .then(data => {
                 proyectos = data;
-                actualizarGrafico(proyectos);
+                actualizarGrafico(proyectos);  // Actualizar la gráfica al cargar
             });
 
+        // Función para filtrar proyectos por los criterios dados
         function filtrarProyectos() {
             let titulo = document.getElementById("titulo").value.toLowerCase();
             let ip = document.getElementById("ip").value.toLowerCase();
@@ -43,6 +45,7 @@
             let comunidad = document.getElementById("comunidad").value.toLowerCase();
             let financiacion = document.getElementById("financiacion").value;
 
+            // Filtrar los proyectos según los criterios de búsqueda
             let proyectosFiltrados = proyectos.filter(proyecto => 
                 (titulo === "" || proyecto.nombre.toLowerCase().includes(titulo)) &&
                 (ip === "" || proyecto.IP.toLowerCase().includes(ip)) &&
@@ -51,10 +54,11 @@
                 (financiacion === "" || parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, "")) >= parseFloat(financiacion))
             );
 
-            mostrarResultados(proyectosFiltrados);
-            actualizarGrafico(proyectosFiltrados);
+            mostrarResultados(proyectosFiltrados);  // Mostrar resultados filtrados
+            actualizarGrafico(proyectosFiltrados);   // Actualizar gráfica con los proyectos filtrados
         }
 
+        // Mostrar los resultados de los proyectos filtrados
         function mostrarResultados(resultados) {
             let contenedor = document.getElementById("resultados");
             contenedor.innerHTML = "";
@@ -74,13 +78,19 @@
                                  Comunidad: ${proyecto.comunidad}<br>
                                  Financiación: ${proyecto.financiacion}<br>`;
                 contenedor.appendChild(div);
+                // Sumar la financiación total
                 totalFinanciacion += parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
             });
+
+            // Mostrar el total de financiación
             document.getElementById("totalFinanciacion").innerText = `Total financiación de proyectos filtrados: ${totalFinanciacion.toLocaleString()} €`;
         }
 
+        // Función para actualizar la gráfica con los datos filtrados
         function actualizarGrafico(proyectos) {
             let universidades = {};
+
+            // Calcular financiación por universidad
             proyectos.forEach(proyecto => {
                 let uni = proyecto.universidad;
                 let financiacion = parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
@@ -91,13 +101,15 @@
                 }
             });
 
-            let labels = Object.keys(universidades);
-            let data = Object.values(universidades);
+            let labels = Object.keys(universidades);  // Universidades
+            let data = Object.values(universidades);  // Total de financiación por universidad
 
+            // Si ya existe una gráfica, destruirla antes de crear una nueva
             if (chart) {
                 chart.destroy();
             }
 
+            // Crear la nueva gráfica
             let ctx = document.getElementById("grafico").getContext("2d");
             chart = new Chart(ctx, {
                 type: "bar",
