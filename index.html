@@ -4,33 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de Proyectos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        input, select { margin: 5px; padding: 8px; width: 200px; }
+        input, select, button { margin: 5px; padding: 8px; width: 200px; }
         .proyecto { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; background: #f9f9f9; }
         .total-financiacion { font-size: 18px; font-weight: bold; margin-top: 10px; }
+        .container { display: flex; }
+        .filters { width: 30%; }
+        .results { width: 70%; }
     </style>
 </head>
 <body>
     <h1>Buscador de Proyectos</h1>
+    <div class="container">
+        <div class="filters">
+            <input type="text" id="titulo" placeholder="Buscar por palabra clave en título">
+            <input type="text" id="ip" placeholder="Buscar por IP">
+            <input type="text" id="universidad" placeholder="Buscar por universidad">
+            <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
+            <input type="number" id="financiacion" placeholder="Financiación mínima">
+            <button onclick="filtrarProyectos()">Buscar</button>
+        </div>
+        <div class="results">
+            <canvas id="grafico"></canvas>
+            <div id="resultados"></div>
+            <p id="totalFinanciacion" class="total-financiacion"></p>
+        </div>
+    </div>
     
-    <input type="text" id="titulo" placeholder="Buscar por palabra clave en título">
-    <input type="text" id="ip" placeholder="Buscar por IP">
-    <input type="text" id="universidad" placeholder="Buscar por universidad">
-    <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
-    <input type="number" id="financiacion" placeholder="Financiación mínima">
-    <button onclick="filtrarProyectos()">Buscar</button>
-    
-    <div id="resultados"></div>
-    <p id="totalFinanciacion" class="total-financiacion"></p>
-
     <script>
         let proyectos = [];
-        
-        // Cargar proyectos desde JSON
+        let chart;
+
         fetch("proyectos.json")
             .then(response => response.json())
-            .then(data => { proyectos = data; });
+            .then(data => {
+                proyectos = data;
+                actualizarGrafico(proyectos);
+            });
 
         function filtrarProyectos() {
             let titulo = document.getElementById("titulo").value.toLowerCase();
@@ -39,7 +51,7 @@
             let comunidad = document.getElementById("comunidad").value.toLowerCase();
             let financiacion = document.getElementById("financiacion").value;
 
-            let proyectosFiltrados = proyectos.filter(proyecto =>
+            let proyectosFiltrados = proyectos.filter(proyecto => 
                 (titulo === "" || proyecto.nombre.toLowerCase().includes(titulo)) &&
                 (ip === "" || proyecto.IP.toLowerCase().includes(ip)) &&
                 (universidad === "" || proyecto.universidad.toLowerCase().includes(universidad)) &&
@@ -48,7 +60,7 @@
             );
 
             mostrarResultados(proyectosFiltrados);
-            calcularFinanciacionTotal(proyectosFiltrados);
+            actualizarGrafico(proyectosFiltrados);
         }
 
         function mostrarResultados(resultados) {
@@ -57,9 +69,11 @@
 
             if (resultados.length === 0) {
                 contenedor.innerHTML = "<p>No se encontraron resultados</p>";
+                document.getElementById("totalFinanciacion").innerText = "";
                 return;
             }
 
+            let totalFinanciacion = 0;
             resultados.forEach(proyecto => {
                 let div = document.createElement("div");
                 div.classList.add("proyecto");
@@ -68,20 +82,51 @@
                                  Comunidad: ${proyecto.comunidad}<br>
                                  Financiación: ${proyecto.financiacion}<br>`;
                 contenedor.appendChild(div);
+                totalFinanciacion += parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
             });
+            
+            document.getElementById("totalFinanciacion").innerText = `Total financiación de proyectos filtrados: ${totalFinanciacion.toLocaleString()} €`;
         }
 
-        function calcularFinanciacionTotal(proyectosFiltrados) {
-            let total = proyectosFiltrados.reduce((sum, proyecto) => {
-                let cantidad = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
-                return sum + cantidad;
-            }, 0);
+        function actualizarGrafico(proyectos) {
+            let universidades = {};
+            proyectos.forEach(proyecto => {
+                let uni = proyecto.universidad;
+                let financiacion = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                if (universidades[uni]) {
+                    universidades[uni] += financiacion;
+                } else {
+                    universidades[uni] = financiacion;
+                }
+            });
 
-            let totalFinanciacionTexto = total > 0 ? 
-                `Total financiación para proyectos filtrados: ${total.toLocaleString()} €` : 
-                "No hay financiación en los proyectos filtrados.";
+            let labels = Object.keys(universidades);
+            let data = Object.values(universidades);
 
-            document.getElementById("totalFinanciacion").innerText = totalFinanciacionTexto;
+            if (chart) {
+                chart.destroy();
+            }
+
+            let ctx = document.getElementById("grafico").getContext("2d");
+            chart = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Financiación por universidad (€)",
+                        data: data,
+                        backgroundColor: "rgba(54, 162, 235, 0.5)",
+                        borderColor: "rgba(54, 162, 235, 1)",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
         }
     </script>
 </body>
