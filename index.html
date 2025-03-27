@@ -73,11 +73,15 @@
             resultados.forEach(proyecto => {
                 let div = document.createElement("div");
                 div.classList.add("proyecto");
+
+                // Aquí corregimos el acceso al 'Resumen' (usando proyecto.Resumen)
+                let resumen = proyecto.Resumen && proyecto.Resumen.trim() !== "" ? proyecto.Resumen : 'No disponible';
+
                 div.innerHTML = `<b>${proyecto.nombre}</b> (${proyecto.universidad})<br>
                                  IP: ${proyecto.IP}<br>
                                  Comunidad: ${proyecto.comunidad}<br>
                                  Financiación: ${proyecto.financiacion}<br>
-                                 <b>Resumen:</b> ${proyecto.resumen || 'No disponible'}<br>`;  // Aquí agregamos el resumen
+                                 <b>Resumen:</b> ${resumen}<br>`;  // Mostramos el resumen
                 contenedor.appendChild(div);
                 // Sumar la financiación total
                 totalFinanciacion += parseFloat(proyecto.financiacion.replace("€", "").replace(/\./g, ""));
