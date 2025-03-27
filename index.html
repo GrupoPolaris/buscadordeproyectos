@@ -8,18 +8,37 @@
         body { font-family: Arial, sans-serif; margin: 20px; }
         input, select { margin: 5px; padding: 8px; width: 200px; }
         .proyecto { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; background: #f9f9f9; }
+        .container { display: flex; justify-content: space-between; }
+        .filters { width: 30%; }
+        .results { width: 65%; }
+        #chartContainer { margin-top: 20px; }
     </style>
+    <!-- Incluir Chart.js para gráficos interactivos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Buscador de Proyectos</h1>
-    <input type="text" id="titulo" placeholder="Buscar por título">
-    <input type="text" id="ip" placeholder="Buscar por IP">
-    <input type="text" id="universidad" placeholder="Buscar por universidad">
-    <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
-    <input type="number" id="financiacion" placeholder="Financiación mínima">
-    <button onclick="filtrarProyectos()">Buscar</button>
     
-    <div id="resultados"></div>
+    <div class="container">
+        <!-- Filtros a la izquierda -->
+        <div class="filters">
+            <h2>Filtros</h2>
+            <input type="text" id="titulo" placeholder="Buscar por título">
+            <input type="text" id="ip" placeholder="Buscar por IP">
+            <input type="text" id="universidad" placeholder="Buscar por universidad">
+            <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
+            <input type="number" id="financiacion" placeholder="Financiación mínima">
+            <button onclick="filtrarProyectos()">Buscar</button>
+        </div>
+        
+        <!-- Resultados a la derecha -->
+        <div class="results">
+            <div id="resultados"></div>
+            <div id="chartContainer">
+                <canvas id="financiacionChart"></canvas>
+            </div>
+        </div>
+    </div>
     
     <script>
         let proyectos = [];
@@ -27,7 +46,10 @@
         // Cargar proyectos desde JSON generado en el backend
         fetch("proyectos.json")
             .then(response => response.json())
-            .then(data => { proyectos = data; });
+            .then(data => { 
+                proyectos = data;
+                filtrarProyectos();  // Mostrar resultados por defecto al cargar la página
+            });
         
         function filtrarProyectos() {
             let titulo = document.getElementById("titulo").value.toLowerCase();
@@ -45,6 +67,7 @@
             );
             
             mostrarResultados(resultados);
+            generarGrafico(resultados);
         }
         
         function mostrarResultados(resultados) {
@@ -65,6 +88,46 @@
                                  Financiación: ${proyecto.financiacion}<br>
                                  <a href="resumenes.html?id=${proyecto.id}" target="_blank">Ver Resumen</a>`;
                 contenedor.appendChild(div);
+            });
+        }
+        
+        function generarGrafico(resultados) {
+            let ctx = document.getElementById("financiacionChart").getContext("2d");
+            
+            let universidades = [];
+            let financiacionTotal = [];
+            
+            // Agrupar proyectos por universidad y sumar la financiación
+            resultados.forEach(proyecto => {
+                let index = universidades.indexOf(proyecto.universidad);
+                if (index === -1) {
+                    universidades.push(proyecto.universidad);
+                    financiacionTotal.push(parseFloat(proyecto.financiacion.replace("€", "").replace(".", "")));
+                } else {
+                    financiacionTotal[index] += parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                }
+            });
+            
+            // Crear gráfico de barras
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: universidades,
+                    datasets: [{
+                        label: 'Financiación total por universidad',
+                        data: financiacionTotal,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
             });
         }
     </script>
