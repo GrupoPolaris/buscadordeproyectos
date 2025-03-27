@@ -8,13 +8,13 @@
         body { font-family: Arial, sans-serif; margin: 20px; }
         input, select { margin: 5px; padding: 8px; width: 200px; }
         .proyecto { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; background: #f9f9f9; }
-        canvas { margin-top: 20px; }
+        .total-financiacion { font-size: 18px; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
     <h1>Buscador de Proyectos</h1>
     
-    <input type="text" id="titulo" placeholder="Buscar por título">
+    <input type="text" id="titulo" placeholder="Buscar por palabra clave en título">
     <input type="text" id="ip" placeholder="Buscar por IP">
     <input type="text" id="universidad" placeholder="Buscar por universidad">
     <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
@@ -22,19 +22,16 @@
     <button onclick="filtrarProyectos()">Buscar</button>
     
     <div id="resultados"></div>
-    
-    <canvas id="grafico" width="400" height="200"></canvas>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <p id="totalFinanciacion" class="total-financiacion"></p>
+
     <script>
         let proyectos = [];
         
-        // Cargar proyectos desde JSON generado en el backend
+        // Cargar proyectos desde JSON
         fetch("proyectos.json")
             .then(response => response.json())
-            .then(data => { proyectos = data; actualizarGrafico(); });
+            .then(data => { proyectos = data; });
 
-        // Filtrar los proyectos según criterios de búsqueda
         function filtrarProyectos() {
             let titulo = document.getElementById("titulo").value.toLowerCase();
             let ip = document.getElementById("ip").value.toLowerCase();
@@ -42,7 +39,6 @@
             let comunidad = document.getElementById("comunidad").value.toLowerCase();
             let financiacion = document.getElementById("financiacion").value;
 
-            // Filtrar proyectos
             let proyectosFiltrados = proyectos.filter(proyecto =>
                 (titulo === "" || proyecto.nombre.toLowerCase().includes(titulo)) &&
                 (ip === "" || proyecto.IP.toLowerCase().includes(ip)) &&
@@ -52,10 +48,9 @@
             );
 
             mostrarResultados(proyectosFiltrados);
-            actualizarGrafico(proyectosFiltrados);
+            calcularFinanciacionTotal(proyectosFiltrados);
         }
 
-        // Mostrar los resultados en el HTML
         function mostrarResultados(resultados) {
             let contenedor = document.getElementById("resultados");
             contenedor.innerHTML = "";
@@ -71,57 +66,22 @@
                 div.innerHTML = `<b>${proyecto.nombre}</b> (${proyecto.universidad})<br>
                                  IP: ${proyecto.IP}<br>
                                  Comunidad: ${proyecto.comunidad}<br>
-                                 Financiación: ${proyecto.financiacion}<br>
-                                 <a href="resumenes.html?id=${proyecto.id}" target="_blank">Ver Resumen</a>`;
+                                 Financiación: ${proyecto.financiacion}<br>`;
                 contenedor.appendChild(div);
             });
         }
 
-        // Actualizar la gráfica con los datos filtrados
-        function actualizarGrafico(proyectosFiltrados = proyectos) {
-            // Calcular financiación por universidad
-            let universidades = {};
-            
-            proyectosFiltrados.forEach(proyecto => {
-                let universidad = proyecto.universidad;
+        function calcularFinanciacionTotal(proyectosFiltrados) {
+            let total = proyectosFiltrados.reduce((sum, proyecto) => {
                 let cantidad = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
-                
-                if (!universidades[universidad]) {
-                    universidades[universidad] = 0;
-                }
-                universidades[universidad] += cantidad;
-            });
+                return sum + cantidad;
+            }, 0);
 
-            // Preparar los datos para la gráfica
-            let labels = Object.keys(universidades);  // Nombres de universidades
-            let data = Object.values(universidades);  // Financiación total por universidad
+            let totalFinanciacionTexto = total > 0 ? 
+                `Total financiación para proyectos filtrados: ${total.toLocaleString()} €` : 
+                "No hay financiación en los proyectos filtrados.";
 
-            // Actualizar la gráfica con los nuevos datos
-            const ctx = document.getElementById('grafico').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Financiación Total por Universidad',
-                        data: data,
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            beginAtZero: true
-                        },
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+            document.getElementById("totalFinanciacion").innerText = totalFinanciacionTexto;
         }
     </script>
 </body>
