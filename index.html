@@ -8,77 +8,63 @@
         body { font-family: Arial, sans-serif; margin: 20px; }
         input, select { margin: 5px; padding: 8px; width: 200px; }
         .proyecto { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; background: #f9f9f9; }
-        .container { display: flex; justify-content: space-between; }
-        .filters { width: 30%; }
-        .results { width: 65%; }
-        #chartContainer { margin-top: 20px; }
+        canvas { margin-top: 20px; }
     </style>
-    <!-- Incluir Chart.js para gráficos interactivos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Buscador de Proyectos</h1>
     
-    <div class="container">
-        <!-- Filtros a la izquierda -->
-        <div class="filters">
-            <h2>Filtros</h2>
-            <input type="text" id="titulo" placeholder="Buscar por título">
-            <input type="text" id="ip" placeholder="Buscar por IP">
-            <input type="text" id="universidad" placeholder="Buscar por universidad">
-            <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
-            <input type="number" id="financiacion" placeholder="Financiación mínima">
-            <button onclick="filtrarProyectos()">Buscar</button>
-        </div>
-        
-        <!-- Resultados a la derecha -->
-        <div class="results">
-            <div id="resultados"></div>
-            <div id="chartContainer">
-                <canvas id="financiacionChart"></canvas>
-            </div>
-        </div>
-    </div>
+    <input type="text" id="titulo" placeholder="Buscar por título">
+    <input type="text" id="ip" placeholder="Buscar por IP">
+    <input type="text" id="universidad" placeholder="Buscar por universidad">
+    <input type="text" id="comunidad" placeholder="Buscar por Comunidad Autónoma">
+    <input type="number" id="financiacion" placeholder="Financiación mínima">
+    <button onclick="filtrarProyectos()">Buscar</button>
     
+    <div id="resultados"></div>
+    
+    <canvas id="grafico" width="400" height="200"></canvas>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         let proyectos = [];
         
         // Cargar proyectos desde JSON generado en el backend
         fetch("proyectos.json")
             .then(response => response.json())
-            .then(data => { 
-                proyectos = data;
-                filtrarProyectos();  // Mostrar resultados por defecto al cargar la página
-            });
-        
+            .then(data => { proyectos = data; actualizarGrafico(); });
+
+        // Filtrar los proyectos según criterios de búsqueda
         function filtrarProyectos() {
             let titulo = document.getElementById("titulo").value.toLowerCase();
             let ip = document.getElementById("ip").value.toLowerCase();
             let universidad = document.getElementById("universidad").value.toLowerCase();
             let comunidad = document.getElementById("comunidad").value.toLowerCase();
             let financiacion = document.getElementById("financiacion").value;
-            
-            let resultados = proyectos.filter(proyecto => 
+
+            // Filtrar proyectos
+            let proyectosFiltrados = proyectos.filter(proyecto =>
                 (titulo === "" || proyecto.nombre.toLowerCase().includes(titulo)) &&
                 (ip === "" || proyecto.IP.toLowerCase().includes(ip)) &&
                 (universidad === "" || proyecto.universidad.toLowerCase().includes(universidad)) &&
                 (comunidad === "" || proyecto.comunidad.toLowerCase().includes(comunidad)) &&
                 (financiacion === "" || parseFloat(proyecto.financiacion.replace("€", "").replace(".", "")) >= parseFloat(financiacion))
             );
-            
-            mostrarResultados(resultados);
-            generarGrafico(resultados);
+
+            mostrarResultados(proyectosFiltrados);
+            actualizarGrafico(proyectosFiltrados);
         }
-        
+
+        // Mostrar los resultados en el HTML
         function mostrarResultados(resultados) {
             let contenedor = document.getElementById("resultados");
             contenedor.innerHTML = "";
-            
+
             if (resultados.length === 0) {
                 contenedor.innerHTML = "<p>No se encontraron resultados</p>";
                 return;
             }
-            
+
             resultados.forEach(proyecto => {
                 let div = document.createElement("div");
                 div.classList.add("proyecto");
@@ -90,39 +76,46 @@
                 contenedor.appendChild(div);
             });
         }
-        
-        function generarGrafico(resultados) {
-            let ctx = document.getElementById("financiacionChart").getContext("2d");
+
+        // Actualizar la gráfica con los datos filtrados
+        function actualizarGrafico(proyectosFiltrados = proyectos) {
+            // Calcular financiación por universidad
+            let universidades = {};
             
-            let universidades = [];
-            let financiacionTotal = [];
-            
-            // Agrupar proyectos por universidad y sumar la financiación
-            resultados.forEach(proyecto => {
-                let index = universidades.indexOf(proyecto.universidad);
-                if (index === -1) {
-                    universidades.push(proyecto.universidad);
-                    financiacionTotal.push(parseFloat(proyecto.financiacion.replace("€", "").replace(".", "")));
-                } else {
-                    financiacionTotal[index] += parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+            proyectosFiltrados.forEach(proyecto => {
+                let universidad = proyecto.universidad;
+                let cantidad = parseFloat(proyecto.financiacion.replace("€", "").replace(".", ""));
+                
+                if (!universidades[universidad]) {
+                    universidades[universidad] = 0;
                 }
+                universidades[universidad] += cantidad;
             });
-            
-            // Crear gráfico de barras
+
+            // Preparar los datos para la gráfica
+            let labels = Object.keys(universidades);  // Nombres de universidades
+            let data = Object.values(universidades);  // Financiación total por universidad
+
+            // Actualizar la gráfica con los nuevos datos
+            const ctx = document.getElementById('grafico').getContext('2d');
             new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: universidades,
+                    labels: labels,
                     datasets: [{
-                        label: 'Financiación total por universidad',
-                        data: financiacionTotal,
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
+                        label: 'Financiación Total por Universidad',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
                     }]
                 },
                 options: {
+                    responsive: true,
                     scales: {
+                        x: {
+                            beginAtZero: true
+                        },
                         y: {
                             beginAtZero: true
                         }
